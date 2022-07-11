@@ -19,6 +19,7 @@ import javafx.stage.Stage;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
 public class FanfictionUtilApplication extends Application {
     private static final String TITLE = "Fanfiction Util";
@@ -30,8 +31,9 @@ public class FanfictionUtilApplication extends Application {
     private final Button load = new Button("load");
     private final Button parse = new Button("parse");
     private final Button release = new Button("release");
-    private final TextFactory factory = new JsonTextFactory("\n");
+    private final Button export = new Button("export");
     private final Label label = new Label();
+    private TextFactory factory;
     private Stage stage;
     private Text text = null;
     private int index;
@@ -47,6 +49,21 @@ public class FanfictionUtilApplication extends Application {
         load.setOnMouseClicked(this::load);
         parse.setOnMouseClicked(this::parse);
         release.setOnMouseClicked(this::release);
+        export.setOnMouseClicked(this::export);
+    }
+
+    @Override
+    public void init() throws Exception {
+        factory = new JsonTextFactory(getDelim());
+    }
+
+    private String getDelim() {
+        Map<String, String> parameters = getParameters().getNamed();
+        String delim = parameters.getOrDefault("delim", "\n");
+        return delim
+                .replace("\\n", "\n")
+                .replace("\\t", "\t")
+                .replace("\\f", "\f");
     }
 
     private void showError(String message) {
@@ -163,6 +180,11 @@ public class FanfictionUtilApplication extends Application {
         }
     }
 
+    private BufferedWriter createWriter(File file) throws FileNotFoundException {
+        FileOutputStream stream = new FileOutputStream(file);
+        return new BufferedWriter(new OutputStreamWriter(stream, StandardCharsets.UTF_8));
+    }
+
     private void release(MouseEvent event) {
         if (textIsNull()) {
             return;
@@ -173,12 +195,28 @@ public class FanfictionUtilApplication extends Application {
             if (file == null) {
                 return;
             }
-            FileOutputStream stream = new FileOutputStream(file);
-            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(stream, StandardCharsets.UTF_8));
+            BufferedWriter writer = createWriter(file);
             writer.write(text.getTranslate());
             writer.close();
         } catch (IOException e) {
             throw new IllegalStateException("Can't release text due to", e);
+        }
+    }
+
+    private void export(MouseEvent event) {
+        if (textIsNull()) {
+            return;
+        }
+        try {
+            File file = chooseFile(Mode.SAVE);
+            if (file == null) {
+                return;
+            }
+            BufferedWriter writer = createWriter(file);
+            writer.write(text.getSource());
+            writer.close();
+        } catch (IOException e) {
+            throw new IllegalStateException("Can't export due to", e);
         }
     }
 
@@ -207,6 +245,7 @@ public class FanfictionUtilApplication extends Application {
         grid.add(load, 1, 2);
         grid.add(parse, 0, 3);
         grid.add(release, 1, 3);
+        grid.add(export, 0, 4);
         grid.add(label, 1, 4);
     }
 
