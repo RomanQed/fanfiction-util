@@ -2,7 +2,7 @@ package com.github.romanqed.futil.models;
 
 import java.util.List;
 
-public class Text implements Translatable {
+public final class Text implements Translatable {
     private final List<TextBlock> body;
     private final String delim;
 
