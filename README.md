@@ -9,7 +9,7 @@ A simple utility to help the translator with fanfiction.net
 4) Click "parse" and select the file containing the downloaded web page
 5) PROFIT
 
-# How To Use Built-in Translator
+# How To Use Translator
 ## If you will use the built-in implementation
 1) Go to https://rapidapi.com/microsoft-azure-org-microsoft-cognitive-services/api/microsoft-translator-text/
 2) Subscribe to api
