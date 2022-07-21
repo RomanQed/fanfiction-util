@@ -1,0 +1,80 @@
+package com.github.romanqed.futil;
+
+import com.github.romanqed.futil.translator.MicrosoftTranslator;
+import com.github.romanqed.futil.translator.Translator;
+import com.github.romanqed.futil.translator.TranslatorFactory;
+import com.github.romanqed.jeflect.ReflectUtil;
+import com.github.romanqed.jeflect.meta.LambdaType;
+import com.github.romanqed.util.Checks;
+import com.google.gson.Gson;
+import io.github.amayaframework.http.ContentType;
+import io.github.amayaframework.http.HttpUtil;
+import kong.unirest.Unirest;
+import kong.unirest.UnirestInstance;
+
+import java.io.*;
+import java.lang.reflect.Method;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
+import java.util.Locale;
+
+public class CommonTranslatorFactory implements TranslatorFactory {
+    private static final LambdaType<Translator> TRANSLATOR = LambdaType.fromClass(Translator.class);
+    private static final String URL = "https://microsoft-translator-text.p.rapidapi.com/translate";
+    private static final String TOKEN_HEADER = "X-RapidAPI-Key";
+    private static final Gson GSON = new Gson();
+    private final Config config;
+
+    public CommonTranslatorFactory(File file) throws IOException {
+        config = readConfig(file);
+    }
+
+    private Config readConfig(File file) throws IOException {
+        FileInputStream fileStream = new FileInputStream(file.getAbsolutePath());
+        BufferedReader reader = new BufferedReader(new InputStreamReader(fileStream, StandardCharsets.UTF_8));
+        String config = reader.lines().reduce("", (left, right) -> left + right + "\n");
+        reader.close();
+        return GSON.fromJson(config, Config.class);
+    }
+
+    private Translator createDefault() {
+        UnirestInstance client = Unirest.spawnInstance();
+        client
+                .config()
+                .setDefaultHeader(HttpUtil.CONTENT_HEADER, ContentType.JSON.getHeader())
+                .setDefaultHeader(TOKEN_HEADER, config.getToken())
+                .setDefaultHeader("Accept-Encoding", "utf-8");
+        return new MicrosoftTranslator(client, URL);
+    }
+
+    private Translator createCustom() throws Exception {
+        File jar = new File(config.getJar());
+        URLClassLoader loader = URLClassLoader.newInstance(
+                new URL[]{new URL("file://" + jar.getAbsolutePath())},
+                getClass().getClassLoader()
+        );
+        Class<?> clazz = Class.forName("com.futil.CustomTranslator", true, loader);
+        Method method = clazz.getDeclaredMethod("translate", String[].class, Locale.class, Locale.class);
+        if (method.getReturnType() != String[].class) {
+            throw new IllegalStateException("Invalid translate method");
+        }
+        Translator ret;
+        try {
+            Object instance = clazz.getConstructor().newInstance();
+            ret = ReflectUtil.packLambdaMethod(TRANSLATOR, method, instance);
+        } catch (Throwable e) {
+            throw new IllegalStateException("Can't pack translate method due to", e);
+        }
+        loader.close();
+        return ret;
+    }
+
+    @Override
+    public Translator create() {
+        if (config.isUseCustomTranslator()) {
+            return Checks.safetyCall(this::createCustom);
+        }
+        return createDefault();
+    }
+}

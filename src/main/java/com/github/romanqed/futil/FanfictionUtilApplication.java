@@ -4,7 +4,6 @@ import com.github.romanqed.futil.models.Text;
 import com.github.romanqed.futil.models.TextBlock;
 import com.github.romanqed.futil.parser.JsonTextFactory;
 import com.github.romanqed.futil.parser.TextFactory;
-import com.github.romanqed.futil.translator.MicrosoftTranslatorFactory;
 import com.github.romanqed.futil.translator.Translator;
 import com.github.romanqed.util.Checks;
 import javafx.application.Application;
@@ -62,7 +61,7 @@ public class FanfictionUtilApplication extends Application {
         export.setOnMouseClicked(this::export);
         translate.setOnMouseClicked(this::translate);
         translateAll.setOnMouseClicked(this::translateAll);
-        translator = Checks.safetyCall(() -> new MicrosoftTranslatorFactory(CONFIG).create(), () -> null);
+        translator = Checks.safetyCall(() -> new CommonTranslatorFactory(CONFIG).create(), () -> null);
     }
 
     @Override

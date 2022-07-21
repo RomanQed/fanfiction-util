@@ -16,7 +16,7 @@ public class MicrosoftTranslator implements Translator {
     private final UnirestInstance client;
     private final String url;
 
-    MicrosoftTranslator(UnirestInstance client, String url) {
+    public MicrosoftTranslator(UnirestInstance client, String url) {
         this.client = client;
         this.url = url;
     }
