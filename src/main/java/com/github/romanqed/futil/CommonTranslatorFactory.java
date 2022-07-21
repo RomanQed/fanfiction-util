@@ -15,10 +15,8 @@ import kong.unirest.UnirestInstance;
 
 import java.io.*;
 import java.lang.reflect.Method;
-import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
-import java.sql.Ref;
 import java.util.Locale;
 
 public class CommonTranslatorFactory implements TranslatorFactory {
