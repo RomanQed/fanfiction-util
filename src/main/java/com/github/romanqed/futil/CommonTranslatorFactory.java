@@ -5,6 +5,7 @@ import com.github.romanqed.futil.translator.Translator;
 import com.github.romanqed.futil.translator.TranslatorFactory;
 import com.github.romanqed.jeflect.ReflectUtil;
 import com.github.romanqed.jeflect.lambdas.Lambda;
+import com.github.romanqed.jeflect.lambdas.LambdaFactory;
 import com.github.romanqed.util.Checks;
 import com.google.gson.Gson;
 import io.github.amayaframework.http.ContentType;
@@ -17,6 +18,7 @@ import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
+import java.sql.Ref;
 import java.util.Locale;
 
 public class CommonTranslatorFactory implements TranslatorFactory {
@@ -49,21 +51,19 @@ public class CommonTranslatorFactory implements TranslatorFactory {
 
     private Translator createCustom() throws Exception {
         File jar = new File(config.getJar());
-        URLClassLoader loader = URLClassLoader.newInstance(
-                new URL[]{new URL("file://" + jar.getAbsolutePath())},
-                getClass().getClassLoader()
-        );
-        Class<?> clazz = Class.forName("com.futil.CustomTranslator", true, loader);
+        URLClassLoader loader = JarUtil.loadJar(jar, ClassLoader.getSystemClassLoader());
+        Class<?> clazz = loader.loadClass("com.futil.CustomTranslator");
         Method translate = clazz.getDeclaredMethod("translate", String[].class, Locale.class, Locale.class);
         if (translate.getReturnType() != String[].class) {
             throw new IllegalStateException("Invalid translate method");
         }
         Method close = clazz.getDeclaredMethod("close");
         Translator ret;
+        LambdaFactory factory = new LambdaFactory(ReflectUtil.wrapClassLoader(loader));
         try {
             Object instance = clazz.getConstructor().newInstance();
-            Lambda translateLambda = ReflectUtil.packMethod(translate, instance);
-            Lambda closeLambda = ReflectUtil.packMethod(close, instance);
+            Lambda translateLambda = factory.packMethod(translate, instance);
+            Lambda closeLambda = factory.packMethod(close, instance);
             ret = new TranslatorWrapper(translateLambda, closeLambda);
         } catch (Throwable e) {
             throw new IllegalStateException("Can't pack translate method due to", e);
