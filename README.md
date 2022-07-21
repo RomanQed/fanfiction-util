@@ -25,6 +25,23 @@ A simple utility to help the translator with fanfiction.net
 ## If you want to use your implementation
 1) Create java library project in your ide
 2) Create class com.futil.CustomTranslator
+
+```java
+package com.futil;
+
+import java.util.Locale;
+
+public class CustomTranslator {
+    public String[] translate(String[] sources, Locale to, Locale from) {
+        return sources;
+    }
+
+    public void close() {
+        System.out.println("Closed");
+    }
+}
+```
+
 3) Build project to get .jar file
 4) Create and fill config this way
 
