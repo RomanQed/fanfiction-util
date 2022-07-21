@@ -4,6 +4,9 @@ import com.github.romanqed.futil.models.Text;
 import com.github.romanqed.futil.models.TextBlock;
 import com.github.romanqed.futil.parser.JsonTextFactory;
 import com.github.romanqed.futil.parser.TextFactory;
+import com.github.romanqed.futil.translator.MicrosoftTranslatorFactory;
+import com.github.romanqed.futil.translator.Translator;
+import com.github.romanqed.util.Checks;
 import javafx.application.Application;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -19,12 +22,16 @@ import javafx.stage.Stage;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 public class FanfictionUtilApplication extends Application {
+    private static final Locale RUSSIAN = Locale.forLanguageTag("ru");
+    private static final File CONFIG = new File("config.json");
     private static final String TITLE = "Fanfiction Util";
     private final TextArea source;
-    private final TextArea translate;
+    private final TextArea translated;
     private final Button next = new Button(">");
     private final Button prev = new Button("<");
     private final Button save = new Button("save");
@@ -32,7 +39,10 @@ public class FanfictionUtilApplication extends Application {
     private final Button parse = new Button("parse");
     private final Button release = new Button("release");
     private final Button export = new Button("export");
+    private final Button translate = new Button("translate");
+    private final Button translateAll = new Button("translate all");
     private final Label label = new Label();
+    private final Translator translator;
     private TextFactory factory;
     private Stage stage;
     private Text text = null;
@@ -41,8 +51,8 @@ public class FanfictionUtilApplication extends Application {
     public FanfictionUtilApplication() {
         source = new TextArea();
         source.setWrapText(true);
-        translate = new TextArea();
-        translate.setWrapText(true);
+        translated = new TextArea();
+        translated.setWrapText(true);
         next.setOnMouseClicked(this::next);
         prev.setOnMouseClicked(this::previous);
         save.setOnMouseClicked(this::save);
@@ -50,11 +60,21 @@ public class FanfictionUtilApplication extends Application {
         parse.setOnMouseClicked(this::parse);
         release.setOnMouseClicked(this::release);
         export.setOnMouseClicked(this::export);
+        translate.setOnMouseClicked(this::translate);
+        translateAll.setOnMouseClicked(this::translateAll);
+        translator = Checks.safetyCall(() -> new MicrosoftTranslatorFactory(CONFIG).create(), () -> null);
     }
 
     @Override
-    public void init() throws Exception {
+    public void init() {
         factory = new JsonTextFactory(getDelim());
+    }
+
+    @Override
+    public void stop() throws Exception {
+        if (translator != null) {
+            translator.close();
+        }
     }
 
     private String getDelim() {
@@ -92,6 +112,39 @@ public class FanfictionUtilApplication extends Application {
         return false;
     }
 
+    private void translate(MouseEvent event) {
+        String translate;
+        try {
+            translate = translator.translate(source.getText(), RUSSIAN);
+        } catch (Exception e) {
+            showError("TRANSLATOR API ERROR");
+            return;
+        }
+        translated.setText(translate);
+    }
+
+    private void translateAll(MouseEvent event) {
+        if (textIsNull()) {
+            return;
+        }
+        List<TextBlock> body = text.getBody();
+        String[] sources = new String[body.size()];
+        for (int i = 0; i < sources.length; ++i) {
+            sources[i] = body.get(i).getSource();
+        }
+        String[] translated;
+        try {
+            translated = translator.translate(sources, RUSSIAN);
+        } catch (Exception e) {
+            showError("TRANSLATOR API ERROR");
+            return;
+        }
+        for (int i = 0; i < translated.length; ++i) {
+            body.get(i).setTranslate(translated[i]);
+        }
+        this.translated.setText(translated[index]);
+    }
+
     private void next(MouseEvent event) {
         if (textIsNull() || indexNotInRange(index + 1)) {
             return;
@@ -99,13 +152,13 @@ public class FanfictionUtilApplication extends Application {
         updateBlock();
         TextBlock block = text.getBody().get(++index);
         source.setText(block.getSource());
-        translate.setText(block.getTranslate());
+        translated.setText(block.getTranslate());
         moveIndex();
     }
 
     private void updateBlock() {
         TextBlock block = text.getBody().get(index);
-        block.setTranslate(translate.getText());
+        block.setTranslate(translated.getText());
     }
 
     private void previous(MouseEvent event) {
@@ -114,7 +167,7 @@ public class FanfictionUtilApplication extends Application {
         }
         TextBlock block = text.getBody().get(--index);
         source.setText(block.getSource());
-        translate.setText(block.getTranslate());
+        translated.setText(block.getTranslate());
         moveIndex();
     }
 
@@ -135,7 +188,7 @@ public class FanfictionUtilApplication extends Application {
         }
         TextBlock block = text.getBody().get(index);
         source.setText(block.getSource());
-        translate.setText(block.getTranslate());
+        translated.setText(block.getTranslate());
     }
 
     private void save(MouseEvent event) {
@@ -238,7 +291,7 @@ public class FanfictionUtilApplication extends Application {
 
     private void addGridElements(GridPane grid) {
         grid.add(source, 0, 0);
-        grid.add(translate, 1, 0);
+        grid.add(translated, 1, 0);
         grid.add(prev, 0, 1);
         grid.add(next, 1, 1);
         grid.add(save, 0, 2);
@@ -247,6 +300,10 @@ public class FanfictionUtilApplication extends Application {
         grid.add(release, 1, 3);
         grid.add(export, 0, 4);
         grid.add(label, 1, 4);
+        if (translator != null) {
+            grid.add(translate, 0, 5);
+            grid.add(translateAll, 1, 5);
+        }
     }
 
     private enum Mode {
