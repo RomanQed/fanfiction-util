@@ -4,7 +4,7 @@ import com.github.romanqed.futil.translator.MicrosoftTranslator;
 import com.github.romanqed.futil.translator.Translator;
 import com.github.romanqed.futil.translator.TranslatorFactory;
 import com.github.romanqed.jeflect.ReflectUtil;
-import com.github.romanqed.jeflect.meta.LambdaType;
+import com.github.romanqed.jeflect.lambdas.Lambda;
 import com.github.romanqed.util.Checks;
 import com.google.gson.Gson;
 import io.github.amayaframework.http.ContentType;
@@ -20,7 +20,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 
 public class CommonTranslatorFactory implements TranslatorFactory {
-    private static final LambdaType<Translator> TRANSLATOR = LambdaType.fromClass(Translator.class);
     private static final String URL = "https://microsoft-translator-text.p.rapidapi.com/translate";
     private static final String TOKEN_HEADER = "X-RapidAPI-Key";
     private static final Gson GSON = new Gson();
@@ -55,14 +54,17 @@ public class CommonTranslatorFactory implements TranslatorFactory {
                 getClass().getClassLoader()
         );
         Class<?> clazz = Class.forName("com.futil.CustomTranslator", true, loader);
-        Method method = clazz.getDeclaredMethod("translate", String[].class, Locale.class, Locale.class);
-        if (method.getReturnType() != String[].class) {
+        Method translate = clazz.getDeclaredMethod("translate", String[].class, Locale.class, Locale.class);
+        if (translate.getReturnType() != String[].class) {
             throw new IllegalStateException("Invalid translate method");
         }
+        Method close = clazz.getDeclaredMethod("close");
         Translator ret;
         try {
             Object instance = clazz.getConstructor().newInstance();
-            ret = ReflectUtil.packLambdaMethod(TRANSLATOR, method, instance);
+            Lambda translateLambda = ReflectUtil.packMethod(translate, instance);
+            Lambda closeLambda = ReflectUtil.packMethod(close, instance);
+            ret = new TranslatorWrapper(translateLambda, closeLambda);
         } catch (Throwable e) {
             throw new IllegalStateException("Can't pack translate method due to", e);
         }
@@ -76,5 +78,33 @@ public class CommonTranslatorFactory implements TranslatorFactory {
             return Checks.safetyCall(this::createCustom);
         }
         return createDefault();
+    }
+
+    private static class TranslatorWrapper implements Translator {
+        private final Lambda translate;
+        private final Lambda close;
+
+        private TranslatorWrapper(Lambda translate, Lambda close) {
+            this.translate = translate;
+            this.close = close;
+        }
+
+        @Override
+        public String[] translate(String[] sources, Locale to, Locale from) {
+            try {
+                return (String[]) translate.call(new Object[]{sources, to, from});
+            } catch (Throwable e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        public void close() {
+            try {
+                close.call();
+            } catch (Throwable e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 }

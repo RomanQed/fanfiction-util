@@ -19,8 +19,18 @@ A simple utility to help the translator with fanfiction.net
 
 ```json
 {
-    "translate-token": "Your value of X-RapidAPI-Key header"
+    "token": "Your value of X-RapidAPI-Key header"
 }
 ```
 ## If you want to use your implementation
-1) 
+1) Create java library project in your ide
+2) Create class com.futil.CustomTranslator
+3) Build project to get .jar file
+4) Create and fill config this way
+
+```json
+{
+    "useCustomTranslator": true, 
+    "jar": "path/to/your/file.jar"
+}
+```
