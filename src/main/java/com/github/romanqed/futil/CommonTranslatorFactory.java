@@ -50,7 +50,7 @@ public class CommonTranslatorFactory implements TranslatorFactory {
         File jar = new File(config.getJar());
         URLClassLoader loader = JarUtil.loadJar(jar, ClassLoader.getSystemClassLoader());
         Class<?> clazz = loader.loadClass("com.futil.CustomTranslator");
-        Object instance = clazz.getConstructor().newInstance();
+        Object instance = clazz.getDeclaredConstructor().newInstance();
         BindingFactory factory = new BindingFactory(new DefineClassLoader(loader));
         Translator ret = factory.bind(TRANSLATOR_TYPE, instance);
         loader.close();
