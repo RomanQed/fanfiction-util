@@ -43,6 +43,7 @@ public class FanfictionUtilApplication extends Application {
     private final Label label = new Label();
     private final Translator translator;
     private TextFactory factory;
+    private File file;
     private Stage stage;
     private Text text = null;
     private int index;
@@ -196,9 +197,15 @@ public class FanfictionUtilApplication extends Application {
         }
         updateBlock();
         try {
-            File file = chooseFile(Mode.SAVE);
-            if (file == null) {
-                return;
+            File file;
+            if (this.file != null) {
+                file = this.file;
+            } else {
+                file = chooseFile(Mode.SAVE);
+                if (file == null) {
+                    return;
+                }
+                this.file = file;
             }
             factory.write(text, file);
         } catch (IOException e) {
@@ -213,6 +220,7 @@ public class FanfictionUtilApplication extends Application {
                 return;
             }
             text = factory.read(file);
+            this.file = file;
             reset();
         } catch (IOException e) {
             throw new IllegalStateException("Can't read file due to", e);
