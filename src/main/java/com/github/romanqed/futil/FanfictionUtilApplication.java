@@ -248,6 +248,7 @@ public class FanfictionUtilApplication extends Application {
                 return;
             }
             text = factory.parsePage(file);
+            this.file = null;
             reset();
         } catch (IOException e) {
             throw new IllegalStateException("Can't read file due to", e);
