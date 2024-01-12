@@ -3,6 +3,7 @@
 A simple utility to help the translator with fanfiction.net
 
 # How To
+
 1) Open the required chapter on the website fanfiction.net
 2) Save the page (ctrl+s or right-click->save as)
 3) Open futil.jar
@@ -10,7 +11,9 @@ A simple utility to help the translator with fanfiction.net
 5) PROFIT
 
 # How To Use Translator
+
 ## If you will use the built-in implementation
+
 1) Go to https://rapidapi.com/microsoft-azure-org-microsoft-cognitive-services/api/microsoft-translator-text/
 2) Subscribe to api
 3) Get value of "X-RapidAPI-Key" header
@@ -19,10 +22,12 @@ A simple utility to help the translator with fanfiction.net
 
 ```json
 {
-    "token": "Your value of X-RapidAPI-Key header"
+  "token": "Your value of X-RapidAPI-Key header"
 }
 ```
+
 ## If you want to use your implementation
+
 1) Create java library project in your ide
 2) Create class com.futil.CustomTranslator
 
@@ -47,7 +52,7 @@ public class CustomTranslator {
 
 ```json
 {
-    "useCustomTranslator": true, 
-    "jar": "path/to/your/file.jar"
+  "useCustomTranslator": true,
+  "jar": "path/to/your/file.jar"
 }
 ```

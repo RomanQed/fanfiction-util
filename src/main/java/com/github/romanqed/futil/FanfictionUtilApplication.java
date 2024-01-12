@@ -21,14 +21,26 @@ import javafx.stage.Stage;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 
 public class FanfictionUtilApplication extends Application {
+    private static final File CURRENT_WORKING_DIRECTORY = new File(".").getAbsoluteFile();
     private static final Locale RUSSIAN = Locale.forLanguageTag("ru");
     private static final File CONFIG = new File("config.json");
     private static final String TITLE = "Fanfiction Util";
+    private static final List<FileChooser.ExtensionFilter> JSON_FILTERS = Collections.singletonList(
+            new FileChooser.ExtensionFilter("JSON", "*.json")
+    );
+
+    private static final List<FileChooser.ExtensionFilter> HTML_FILTERS = Arrays.asList(
+            new FileChooser.ExtensionFilter("HTML", "*.html"),
+            new FileChooser.ExtensionFilter("HTM", "*.htm")
+    );
+
+    private static final List<FileChooser.ExtensionFilter> TEXT_FILTERS = Collections.singletonList(
+            new FileChooser.ExtensionFilter("Text documents", "*.txt")
+    );
+
     private final TextArea source;
     private final TextArea translated;
     private final Button next = new Button(">");
@@ -171,8 +183,10 @@ public class FanfictionUtilApplication extends Application {
         moveIndex();
     }
 
-    private File chooseFile(Mode mode) {
+    private File chooseFile(Mode mode, List<FileChooser.ExtensionFilter> filters) {
         FileChooser chooser = new FileChooser();
+        chooser.setInitialDirectory(CURRENT_WORKING_DIRECTORY);
+        chooser.getExtensionFilters().addAll(filters);
         if (mode == Mode.OPEN) {
             chooser.setTitle("Open");
             return chooser.showOpenDialog(stage);
@@ -201,7 +215,7 @@ public class FanfictionUtilApplication extends Application {
             if (this.file != null) {
                 file = this.file;
             } else {
-                file = chooseFile(Mode.SAVE);
+                file = chooseFile(Mode.SAVE, JSON_FILTERS);
                 if (file == null) {
                     return;
                 }
@@ -215,7 +229,7 @@ public class FanfictionUtilApplication extends Application {
 
     private void load(MouseEvent event) {
         try {
-            File file = chooseFile(Mode.OPEN);
+            File file = chooseFile(Mode.OPEN, JSON_FILTERS);
             if (file == null) {
                 return;
             }
@@ -229,7 +243,7 @@ public class FanfictionUtilApplication extends Application {
 
     private void parse(MouseEvent event) {
         try {
-            File file = chooseFile(Mode.OPEN);
+            File file = chooseFile(Mode.OPEN, HTML_FILTERS);
             if (file == null) {
                 return;
             }
@@ -251,7 +265,7 @@ public class FanfictionUtilApplication extends Application {
         }
         updateBlock();
         try {
-            File file = chooseFile(Mode.SAVE);
+            File file = chooseFile(Mode.SAVE, TEXT_FILTERS);
             if (file == null) {
                 return;
             }
@@ -268,7 +282,7 @@ public class FanfictionUtilApplication extends Application {
             return;
         }
         try {
-            File file = chooseFile(Mode.SAVE);
+            File file = chooseFile(Mode.SAVE, TEXT_FILTERS);
             if (file == null) {
                 return;
             }
